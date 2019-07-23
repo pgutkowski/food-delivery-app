@@ -1,6 +1,6 @@
-package com.github.pgutkowski.fda.customer.controller
+package com.github.pgutkowski.fda.restaurant.controller
 
-import com.github.pgutkowski.fda.customer.Customer
+import com.github.pgutkowski.fda.restaurant.Restaurant
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,73 +17,51 @@ import java.util.*
 @RunWith(SpringRunner::class)
 @AutoConfigureWebTestClient
 @SpringBootTest
-class CustomerControllerV1Test {
+class RestaurantControllerV1Test {
 
     @Autowired
     lateinit var webTestClient: WebTestClient
 
     @Test
     fun `PUT with valid request body should return 201 CREATED`(){
-        val createCustomerRequest = CreateCustomerRequest(
-                firstName = "Bright",
-                lastName = "Inventions",
-                phoneNumber = "123456789",
-                emailAddress = "bright@inventions.com",
-                address = "Matejki 12, 80-232 Gdańsk"
-        )
+        val createRestaurantRequest = CreateRestaurantRequest(name = "Bright Inventions")
 
         val createdCustomer = webTestClient.put()
-                .uri("/api/v1/customer/${UUID.randomUUID()}")
+                .uri("/api/v1/restaurant/${UUID.randomUUID()}")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromObject(createCustomerRequest))
+                .body(BodyInserters.fromObject(createRestaurantRequest))
                 .exchange()
                 .expectStatus().isCreated
-                .expectBody<Customer>()
+                .expectBody<Restaurant>()
                 .returnResult()
                 .responseBody ?: throw AssertionError("Expected non null response body customer info")
 
-        assertThat(createdCustomer.firstName).isEqualTo(createCustomerRequest.firstName)
-        assertThat(createdCustomer.lastName).isEqualTo(createCustomerRequest.lastName)
-        assertThat(createdCustomer.phoneNumber).isEqualTo(createCustomerRequest.phoneNumber)
-        assertThat(createdCustomer.emailAddress).isEqualTo(createCustomerRequest.emailAddress)
-        assertThat(createdCustomer.address).isEqualTo(createCustomerRequest.address)
+        assertThat(createdCustomer.name).isEqualTo(createRestaurantRequest.name)
     }
 
     @Test
     fun `PUT with request body with blank first name should return 400 BAD REQUEST`(){
-        val createCustomerRequest = CreateCustomerRequest(
-                firstName = "",
-                lastName = "Inventions",
-                phoneNumber = "123456789",
-                emailAddress = "bright@inventions.com",
-                address = "Matejki 12, 80-232 Gdańsk"
-        )
+        val createRestaurantRequest = CreateRestaurantRequest(name = "")
 
         val errorMessage = webTestClient.put()
-                .uri("/api/v1/customer/${UUID.randomUUID()}")
+                .uri("/api/v1/restaurant/${UUID.randomUUID()}")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromObject(createCustomerRequest))
+                .body(BodyInserters.fromObject(createRestaurantRequest))
                 .exchange()
                 .expectStatus().isBadRequest
                 .expectBody<String>()
                 .returnResult()
                 .responseBody
 
-        assertThat(errorMessage).contains("first name", "blank")
+        assertThat(errorMessage).contains("name", "blank")
     }
 
     @Test
     fun `PUT with request body with null phone number should return 400 BAD REQUEST`(){
-        val createCustomerRequest = mapOf(
-                "firstName" to "Bright",
-                "lastName" to "Inventions",
-                "phoneNumber" to null,
-                "emailAddress" to "bright@inventions.com",
-                "address" to "Matejki 12, 80-232 Gdańsk"
-        )
+        val createCustomerRequest = mapOf<String, Any>()
 
         webTestClient.put()
-                .uri("/api/v1/customer/${UUID.randomUUID()}")
+                .uri("/api/v1/restaurant/${UUID.randomUUID()}")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromObject(createCustomerRequest))
                 .exchange()
