@@ -11,7 +11,7 @@ import org.springframework.web.reactive.config.WebFluxConfigurer
 class WebFluxConfiguration : WebFluxConfigurer {
 
     @Autowired
-    private lateinit var defaultValidator : Validator
+    private lateinit var defaultValidator: Validator
 
     override fun getValidator(): Validator? {
         return defaultValidator

@@ -1,46 +1,50 @@
 package com.github.pgutkowski.fda.restaurant
 
 import com.github.kittinunf.result.coroutines.SuspendableResult
-import com.github.pgutkowski.fda.AsyncDatabase
-import com.github.pgutkowski.fda.customer.CustomerTable
+import com.github.pgutkowski.fda.Page
+import com.github.pgutkowski.fda.PageRequest
+import com.github.pgutkowski.fda.SuspendableDatabase
 import com.github.pgutkowski.fda.restaurant.controller.CreateRestaurantRequest
 import org.jetbrains.exposed.dao.EntityID
-import org.jetbrains.exposed.dao.LongEntity
-import org.jetbrains.exposed.dao.LongEntityClass
-import org.jetbrains.exposed.dao.LongIdTable
-import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.dao.UUIDEntity
+import org.jetbrains.exposed.dao.UUIDEntityClass
+import org.jetbrains.exposed.dao.UUIDTable
 import org.springframework.stereotype.Repository
-import java.sql.SQLException
 import java.util.*
 
-object RestaurantTable : LongIdTable("restaurant") {
-    val uuid = uuid("uuid").uniqueIndex()
-
+object RestaurantTable : UUIDTable("restaurant") {
     val name = varchar("name", 256)
 }
 
-class RestaurantEntity(id: EntityID<Long>) : LongEntity(id) {
-    companion object : LongEntityClass<RestaurantEntity>(RestaurantTable)
-
-    var uuid: UUID by RestaurantTable.uuid
+class RestaurantEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+    companion object : UUIDEntityClass<RestaurantEntity>(RestaurantTable)
 
     var name: String by RestaurantTable.name
 }
 
 @Repository
-class RestaurantRepository(private val asyncDatabase: AsyncDatabase) {
-    suspend fun create(uuid: UUID, createRestaurantRequest: CreateRestaurantRequest) : SuspendableResult<Restaurant, SQLException> {
-        return SuspendableResult.of {
-            asyncDatabase.asyncTransaction {
-                RestaurantEntity.new {
-                    this.uuid = uuid
-                    this.name = createRestaurantRequest.name
-                }.toRestaurant()
-            }
+class RestaurantRepository(private val suspendableDatabase: SuspendableDatabase) {
+
+    suspend fun create(createRestaurantRequest: CreateRestaurantRequest): SuspendableResult<Restaurant, Exception> {
+        return suspendableDatabase.transaction {
+            RestaurantEntity.new {
+                this.name = createRestaurantRequest.name
+            }.toRestaurant()
+        }
+    }
+
+    suspend fun findAll(pageRequest: PageRequest): SuspendableResult<Page<Restaurant>, Exception> {
+        return suspendableDatabase.transaction {
+            val list = RestaurantEntity
+                    .all()
+                    .limit(n = pageRequest.pageSize, offset = pageRequest.offset)
+                    .map(RestaurantEntity::toRestaurant)
+
+            Page(list = list, pageNumber = pageRequest.pageNumber)
         }
     }
 }
 
-fun RestaurantEntity.toRestaurant() : Restaurant {
-    return Restaurant(uuid = this.uuid, name = this.name)
+fun RestaurantEntity.toRestaurant(): Restaurant {
+    return Restaurant(uuid = this.id.value, name = this.name)
 }

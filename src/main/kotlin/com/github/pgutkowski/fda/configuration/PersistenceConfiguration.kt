@@ -1,6 +1,6 @@
 package com.github.pgutkowski.fda.configuration
 
-import com.github.pgutkowski.fda.AsyncDatabase
+import com.github.pgutkowski.fda.SuspendableDatabase
 import org.jetbrains.exposed.sql.Database
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -11,8 +11,8 @@ import javax.sql.DataSource
 class PersistenceConfiguration {
 
     @Bean
-    fun exposedDatabase(dataSource: DataSource) : AsyncDatabase {
-        return AsyncDatabase(Database.connect(dataSource), Executors.newCachedThreadPool())
+    fun exposedDatabase(dataSource: DataSource): SuspendableDatabase {
+        return SuspendableDatabase(Database.connect(dataSource), Executors.newCachedThreadPool())
     }
 
 }

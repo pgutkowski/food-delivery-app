@@ -2,19 +2,18 @@ package com.github.pgutkowski.fda.customer.controller
 
 import com.github.pgutkowski.fda.customer.Customer
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Test
-import org.junit.runner.RunWith
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
-import org.springframework.test.context.junit4.SpringRunner
+import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
 import org.springframework.web.reactive.function.BodyInserters
-import java.util.*
 
-@RunWith(SpringRunner::class)
+@ExtendWith(SpringExtension::class)
 @AutoConfigureWebTestClient
 @SpringBootTest
 class CustomerControllerV1Test {
@@ -23,7 +22,7 @@ class CustomerControllerV1Test {
     lateinit var webTestClient: WebTestClient
 
     @Test
-    fun `PUT with valid request body should return 201 CREATED`(){
+    fun `PUT with valid request body should return 201 CREATED`() {
         val createCustomerRequest = CreateCustomerRequest(
                 firstName = "Bright",
                 lastName = "Inventions",
@@ -33,7 +32,7 @@ class CustomerControllerV1Test {
         )
 
         val createdCustomer = webTestClient.put()
-                .uri("/api/v1/customer/${UUID.randomUUID()}")
+                .uri("/api/v1/customer")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromObject(createCustomerRequest))
                 .exchange()
@@ -50,7 +49,7 @@ class CustomerControllerV1Test {
     }
 
     @Test
-    fun `PUT with request body with blank first name should return 400 BAD REQUEST`(){
+    fun `PUT with request body with blank first name should return 400 BAD REQUEST`() {
         val createCustomerRequest = CreateCustomerRequest(
                 firstName = "",
                 lastName = "Inventions",
@@ -60,7 +59,7 @@ class CustomerControllerV1Test {
         )
 
         val errorMessage = webTestClient.put()
-                .uri("/api/v1/customer/${UUID.randomUUID()}")
+                .uri("/api/v1/customer")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromObject(createCustomerRequest))
                 .exchange()
@@ -73,7 +72,7 @@ class CustomerControllerV1Test {
     }
 
     @Test
-    fun `PUT with request body with null phone number should return 400 BAD REQUEST`(){
+    fun `PUT with request body with null phone number should return 400 BAD REQUEST`() {
         val createCustomerRequest = mapOf(
                 "firstName" to "Bright",
                 "lastName" to "Inventions",
@@ -83,7 +82,7 @@ class CustomerControllerV1Test {
         )
 
         webTestClient.put()
-                .uri("/api/v1/customer/${UUID.randomUUID()}")
+                .uri("/api/v1/customer")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromObject(createCustomerRequest))
                 .exchange()

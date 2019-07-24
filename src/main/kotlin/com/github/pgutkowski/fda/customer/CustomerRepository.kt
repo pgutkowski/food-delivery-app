@@ -1,24 +1,20 @@
 package com.github.pgutkowski.fda.customer
 
 import com.github.kittinunf.result.coroutines.SuspendableResult
-import com.github.pgutkowski.fda.AsyncDatabase
+import com.github.pgutkowski.fda.SuspendableDatabase
 import com.github.pgutkowski.fda.customer.controller.CreateCustomerRequest
-import com.github.pgutkowski.fda.exceptions.NotFoundException
-import com.github.pgutkowski.fda.order.OrderTable
 import org.jetbrains.exposed.dao.EntityID
-import org.jetbrains.exposed.dao.LongEntity
-import org.jetbrains.exposed.dao.LongEntityClass
-import org.jetbrains.exposed.dao.LongIdTable
+import org.jetbrains.exposed.dao.UUIDEntity
+import org.jetbrains.exposed.dao.UUIDEntityClass
+import org.jetbrains.exposed.dao.UUIDTable
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.springframework.stereotype.Repository
-import java.sql.SQLException
 import java.util.*
 import javax.annotation.PostConstruct
 
 
-object CustomerTable : LongIdTable("customer") {
-    val uuid = uuid("unique_id").uniqueIndex()
+object CustomerTable : UUIDTable("customer") {
 
     val firstName = varchar("first_name", 256)
 
@@ -31,10 +27,8 @@ object CustomerTable : LongIdTable("customer") {
     val address = varchar("address", 1024)
 }
 
-class CustomerEntity (id: EntityID<Long>) : LongEntity(id) {
-    companion object : LongEntityClass<CustomerEntity>(CustomerTable)
-
-    var uuid: UUID by CustomerTable.uuid
+class CustomerEntity(id: EntityID<UUID>) : UUIDEntity(id) {
+    companion object : UUIDEntityClass<CustomerEntity>(CustomerTable)
 
     var firstName: String by CustomerTable.firstName
 
@@ -48,9 +42,9 @@ class CustomerEntity (id: EntityID<Long>) : LongEntity(id) {
 
 }
 
-fun CustomerEntity.toCustomer() : Customer {
+fun CustomerEntity.toCustomer(): Customer {
     return Customer(
-            uuid = this.uuid,
+            uuid = this.id.value,
             firstName = this.firstName,
             lastName = this.lastName,
             phoneNumber = this.phoneNumber,
@@ -60,32 +54,23 @@ fun CustomerEntity.toCustomer() : Customer {
 }
 
 @Repository
-class CustomerRepository(private val asyncDatabase: AsyncDatabase) {
+class CustomerRepository(private val suspendableDatabase: SuspendableDatabase) {
     @PostConstruct
-    fun initializeTable(){
-        transaction(asyncDatabase.database) {
-            SchemaUtils.createMissingTablesAndColumns(OrderTable)
+    fun initializeTable() {
+        transaction(suspendableDatabase.database) {
+            SchemaUtils.createMissingTablesAndColumns(CustomerTable)
         }
     }
 
-    suspend fun create(uuid: UUID, createCustomerRequest: CreateCustomerRequest) : SuspendableResult<Customer, SQLException> {
-        return SuspendableResult.of {
-            asyncDatabase.asyncTransaction {
-                CustomerEntity.new {
-                    this.uuid = uuid
-                    this.firstName = createCustomerRequest.firstName
-                    this.lastName = createCustomerRequest.lastName
-                    this.phoneNumber = createCustomerRequest.phoneNumber
-                    this.emailAddress = createCustomerRequest.emailAddress
-                    this.address = createCustomerRequest.address
-                }.toCustomer()
-            }
-        }
-    }
-
-    suspend fun findByUuid(uuid: UUID): SuspendableResult<Customer, Exception> {
-        return SuspendableResult.of(CustomerEntity.find { CustomerTable.uuid eq uuid }.firstOrNull()?.toCustomer()) {
-            NotFoundException(message = "Customer with uuid [$uuid] does not exist")
+    suspend fun create(createCustomerRequest: CreateCustomerRequest): SuspendableResult<Customer, Exception> {
+        return suspendableDatabase.transaction {
+            CustomerEntity.new {
+                this.firstName = createCustomerRequest.firstName
+                this.lastName = createCustomerRequest.lastName
+                this.phoneNumber = createCustomerRequest.phoneNumber
+                this.emailAddress = createCustomerRequest.emailAddress
+                this.address = createCustomerRequest.address
+            }.toCustomer()
         }
     }
 
